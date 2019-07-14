@@ -28,11 +28,13 @@ CSorter::CSorter( const int coreCount, const size_t availiableMemory ) :
         throw std::domain_error( "Wrong core count" );
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void CSorter::Sort( const char *pInputFilename, const char *pOutputFilename )
+bool CSorter::Sort( const char *pInputFilename, const char *pOutputFilename )
 {
     // Multithread partition
     const uint64_t timeA = GetProcessTime();
-    PartialSort( pInputFilename );
+    if( !PartialSort( pInputFilename ) )
+        return false;
+    
     const uint64_t timeB = GetProcessTime();
     const int timeAB = static_cast< int >( timeB - timeA );
     std::cout << "    Partial sort for " << timeAB << " ms" << std::endl;
@@ -42,6 +44,8 @@ void CSorter::Sort( const char *pInputFilename, const char *pOutputFilename )
     const uint64_t timeC = GetProcessTime();
     const int timeBC = static_cast< int >( timeC - timeB );
     std::cout << "    Merge for " << timeBC << " ms" << std::endl;
+    
+    return true;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 static void ThreadFunctionSort( const int threadID, const int elementInChunk, TSortVec& vec, std::mutex& mtx )
@@ -278,12 +282,15 @@ static void ThreadFunctionMerge( const int threadID, const size_t countInp, cons
     }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void CSorter::PartialSort( const char *pFilename )
+bool CSorter::PartialSort( const char *pFilename )
 {
     // Open file and define its size
     std::fstream file( pFilename, std::ios_base::in | std::ios_base::binary );
     if( !file.is_open() )
-        return;
+    {
+        std::cout << "Can't open input file with name: " << pFilename << std::endl;
+        return false;
+    }
     
     // Define size of file
     file.seekg( 0, file.end );
@@ -318,10 +325,6 @@ void CSorter::PartialSort( const char *pFilename )
     }
     file.close();
     
-    // CRAP
-    //return;
-    // end of CRAP
-        
     // Start thread pool
     std::mutex mtx;
     std::vector< std::thread > threadPool;
@@ -332,10 +335,17 @@ void CSorter::PartialSort( const char *pFilename )
     // Waiting until all process finished
     for( int i = 0; i < m_coreCount; ++i )
         threadPool[i].join();
+        
+    return true;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void CSorter::Merge( const char *pFilename )
 {
+    // Create new file for sorting results
+    std::fstream oFile;
+    oFile.open( pFilename, std::ios_base::out | std::ios_base::binary );
+    oFile.close();
+    
     // Define general constants
     const size_t totalCount = m_availableMemory / sizeof( int );
     
@@ -386,6 +396,8 @@ void CSorter::Merge( const char *pFilename )
         
         // Defince required thread count and its buffer sizes
         const size_t activeThreadCount = ( mergeMaxSize > m_coreCount ) ? m_coreCount : mergeMaxSize;
+        if( 0 == activeThreadCount )
+            break;
         const size_t elementInChunk = totalCount / activeThreadCount / 4;
         const size_t countInput = elementInChunk;
         const size_t countOutput = elementInChunk * 2;

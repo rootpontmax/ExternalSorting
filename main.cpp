@@ -14,9 +14,9 @@
 #include "Sorter.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-static const size_t g_memorySize = 256 << 20;
-static const char  *g_pInputFilename = "HugeInput.txt";
-static const char  *g_pOutputFilename = "HugeOutput.txt";
+static const size_t g_memorySize = 128 << 20;
+static const char  *g_pInputFilename = "input";
+static const char  *g_pOutputFilename = "output";
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, const char * argv[])
 {
@@ -28,7 +28,9 @@ int main(int argc, const char * argv[])
     CSorter sorter( coreNumber, g_memorySize );
     
     const uint64_t timeSortBefore = GetProcessTime();
-    sorter.Sort( g_pInputFilename, g_pOutputFilename );
+    if( !sorter.Sort( g_pInputFilename, g_pOutputFilename ) )
+        return 0;
+        
     const uint64_t timeSortAfter = GetProcessTime();
     const int timeLapse = static_cast< int >( timeSortAfter - timeSortBefore );
     std::cout << "    File was sorted for " << timeLapse << " ms" << std::endl;

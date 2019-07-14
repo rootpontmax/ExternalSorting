@@ -35,7 +35,7 @@ class CSorter
 {
 public:
     CSorter( const int coreCount, const size_t availiableMemory );
-    void Sort( const char *pInputFilename, const char *pOutputFilename );
+    bool Sort( const char *pInputFilename, const char *pOutputFilename );
     
 private:
     
@@ -50,7 +50,7 @@ private:
         bool                bReadyToFinish;
     };
     
-    void    PartialSort( const char *pFilename );
+    bool    PartialSort( const char *pFilename );
     void    Merge( const char *pFilename );
     
     const int       m_coreCount;

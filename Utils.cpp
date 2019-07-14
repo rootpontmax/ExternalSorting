@@ -49,7 +49,10 @@ bool CheckHuge( const char *pFilename, const size_t memorySize )
 {
     std::fstream file( pFilename, std::ios_base::in | std::ios_base::binary );
     if( !file.is_open() )
+    {
+        std::cout << "Can't open output file with name: " << pFilename << std::endl;
         return false;
+    }
     
     // Define size of file
     file.seekg( 0, file.end );
